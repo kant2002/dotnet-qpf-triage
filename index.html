@@ -46,7 +46,7 @@ class Model
 {
   constructor() {
     this.owner = 'dotnet';
-    this.repo = 'wpf';
+    this.repo = ko.observable('wpf');
     this.loading = ko.observable(false);
     this.currentTab = ko.observable("Unknown labels");
     this.labels = ko.observableArray();
@@ -68,6 +68,8 @@ class Model
     this.os = ko.observableArray();
     this.apiStatus = ko.observableArray();
     this.team = ko.observableArray();
+
+    this.repo.subscribe(() => this.calculate());
   }
 
   setTab(tab) {
@@ -81,7 +83,7 @@ class Model
 
     this.loading(true);
     try {
-      let labels = await getLabels(octokit, this.owner, this.repo);
+      let labels = await getLabels(octokit, this.owner, this.repo());
       labels = labels.map(_ => {
         return { ..._, isBright: isBright(_.color) }
       })
@@ -211,7 +213,7 @@ model.calculate();
     </div>
     <div class="col-md-6">
       <label for="inputRepoName" class="form-label">Repo name:</label>
-      <input id="inputRepoName" disabled type="text" class="form-control" data-bind="value: repo">
+      <select class="form-select" aria-label="Repo for labels analysis" data-bind="options: ['wpf','winforms','runtime'], value: repo"></select>
     </div>
 
     <div class="col-12">
