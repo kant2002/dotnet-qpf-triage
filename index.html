@@ -25,6 +25,23 @@ const workCategory = [
   'Work Item'
 ]
 
+const wierdCategory = [
+  'ask-mode',
+  'tell-mode',
+]
+
+const mergeStatus = [
+  '* NO MERGE *',
+  'auto_merge',
+]
+
+const triageClassification = [
+  'Triaged',
+  'Untriaged',
+  'Requires WPF team triage',
+  'Discuss In WPF Team Triage'
+]
+
 class Model
 {
   constructor() {
@@ -42,6 +59,15 @@ class Model
     this.servicing = ko.observableArray();
     this.portTargets = ko.observableArray();
     this.workCategories = ko.observableArray();
+    this.wierdCategories = ko.observableArray();
+    this.mergeStatuses = ko.observableArray();
+    this.issueTypes = ko.observableArray();
+    this.triageClassification = ko.observableArray();
+    this.community = ko.observableArray();
+    this.architecture = ko.observableArray();
+    this.os = ko.observableArray();
+    this.apiStatus = ko.observableArray();
+    this.team = ko.observableArray();
   }
 
   setTab(tab) {
@@ -60,11 +86,12 @@ class Model
         return { ..._, isBright: isBright(_.color) }
       })
       labels = labels.filter(_ => {
+          console.log(_);
         if (_.name.startsWith("Cost:")) {
           this.costs.push(_);
           return false;
         }
-        if (_.name.startsWith("Priority:")) {
+        if (_.name.startsWith("Priority")) {
           this.priorities.push(_);
           return false;
         }
@@ -72,12 +99,20 @@ class Model
           this.statuses.push(_);
           return false;
         }
-        if (_.name.startsWith("area-")) {
+        if (_.name.startsWith("Team:")) {
+          this.team.push(_);
+          return false;
+        }
+        if (_.name.startsWith("area-") || _.name.startsWith("Area-") || _.name.startsWith("area:")) {
           this.areas.push(_);
           return false;
         }
         if (_.name.startsWith("tenet-")) {
           this.tenets.push(_);
+          return false;
+        }
+        if (_.name.startsWith("api-")) {
+          this.apiStatus.push(_);
           return false;
         }
         if (_.name.startsWith("rank")) {
@@ -92,8 +127,37 @@ class Model
           this.portTargets.push(_);
           return false;
         }
+        if (_.name.startsWith("issue-type-")) {
+          this.issueTypes.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Community ")) {
+          this.community.push(_);
+          return false;
+        }
+        if (_.name.startsWith("arch-")) {
+          this.architecture.push(_);
+          return false;
+        }
+        if (_.name.startsWith("os-")) {
+          this.os.push(_);
+          console.log(this.os());
+          return false;
+        }
         if (workCategory.indexOf(_.name) !== -1) {
           this.workCategories.push(_);
+          return false;
+        }
+        if (wierdCategory.indexOf(_.name) !== -1) {
+          this.wierdCategories.push(_);
+          return false;
+        }
+        if (mergeStatus.indexOf(_.name) !== -1) {
+          this.mergeStatuses.push(_);
+          return false;
+        }
+        if (triageClassification.indexOf(_.name) !== -1) {
+          this.triageClassification.push(_);
           return false;
         }
         return true;
@@ -110,11 +174,14 @@ ko.components.register('labels-table', {
         this.labels = params.labels;
     },
     template:
-        '<table>\
+        '<table class="table">\
     <tbody data-bind="foreach: labels">\
         <tr>\
             <td>\
               <span class="badge rounded-pill" data-bind="text: name, attr: { title: description }, style: { backgroundColor: color }, css: { \'text-dark\': isBright}"></span>\
+            </td>\
+            <td>\
+              <span data-bind="text: description"></span>\
             </td>\
         </tr>\
     </tbody>\
@@ -178,31 +245,70 @@ model.calculate();
   <!-- ko if: currentTab() == 'Unknown labels' -->
   <h1>Uncategorized <span class="badge bg-secondary" data-bind="text: labels().length">Qty</span></h1>
   <labels-table params="labels: labels"></labels-table>
+  <h2>Issue types</h2>
+  <p>Have no idea what it is. Please confirm that this is obsolete.</p>
+  <labels-table params="labels: issueTypes"></labels-table>
   <!-- /ko -->
   <!-- ko if: currentTab() == 'Prohibited' -->
   <h2>Costs</h2>
+  <p>This items directly related to money. Do not allowed on the triage phase.</p>
   <labels-table params="labels: costs"></labels-table>
   <h2>Priorities</h2>
+  <p>Following "Do not make prioritization decisions" rule this is forbidden.</p>
   <labels-table params="labels: priorities"></labels-table>
   <h2>Statuses</h2>
   <labels-table params="labels: statuses"></labels-table>
   <h2>Servicing</h2>
+  <p>Anything shipping releated is not allowed I believe.</p>
   <labels-table params="labels: servicing"></labels-table>
   <h2>Port Targets</h2>
+  <p>Triagers cannot make decision about porting I believe.</p>
   <labels-table params="labels: portTargets"></labels-table>
+  <h2>Teams</h2>
+  <p>Teams for large projects.</p>
+  <labels-table params="labels: team"></labels-table>
   <!-- /ko -->
   <!-- ko if: currentTab() == 'Allowed' -->
   <h2>Areas</h2>
+  <p>I think this is allowed, but possible no longer needed and areas are wierd.</p>
   <labels-table params="labels: areas"></labels-table>
+  <h2>Triage classificaiton</h2>
+  <p>Too much identical statuses. Triagers need guidance on how to proceed.</p>
+  <labels-table params="labels: triageClassification"></labels-table>
+  <h2>Processor Architecture</h2>
+  <p>Processor architecture on which issue appears.</p>
+  <labels-table params="labels: architecture"></labels-table>
+  <h2>Operation system</h2>
+  <p>Operation system where issue occurs.</p>
+  <labels-table params="labels: os"></labels-table>
+  <h2>API status</h2>
+  <p>All API should follow standard acceptance process.</p>
+  <labels-table params="labels: apiStatus"></labels-table>
   <!-- /ko -->
   <!-- ko if: currentTab() == 'Obsoleted' -->
   <h2>Tenets</h2>
+  <p>Have no idea what it is. Please confirm that this is obsolete.</p>
   <labels-table params="labels: tenets"></labels-table>
   <h2>Ranks</h2>
+  <p>Have no idea what it is. Please confirm that this is obsolete.</p>
   <labels-table params="labels: ranks"></labels-table>
+  <h2>Merge Status</h2>
+  <p>I assume this is merge statuses for PR automation tools in dotnet repo.</p>
+  <labels-table params="labels: mergeStatuses"></labels-table>
+  <h2>Wierd Category</h2>
+  <p>
+    I would like to know about history of this classificaiton more.
+    This is first time I see this kind of kind of division. 
+    Is this something from customer support?
+    If somebody knew what's that let me know.
+  </p>
+  <labels-table params="labels: wierdCategories"></labels-table>
   <h2>Work Category</h2>
   <p>This is Azure DevOps work categories</p>
   <labels-table params="labels: workCategories"></labels-table>
+  <h2>Community</h2>
+  <p>If community is part of the process we don't need this.</p>
+  <labels-table params="labels: community"></labels-table>
   <!-- /ko -->
   <!-- /ko -->
 </body>
