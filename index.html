@@ -27,19 +27,31 @@ const workCategory = [
 
 const wierdCategory = [
   'ask-mode',
+  'Ask-Mode',
   'tell-mode',
+  'Tell-Mode',
 ]
 
 const mergeStatus = [
   '* NO MERGE *',
   'auto_merge',
+  'auto-merge',
+  ':octocat: automerge',
+  ':no_entry_sign: * NO-MERGE *',
+  'NO MERGE',
 ]
 
 const triageClassification = [
+  '_Product-level triaged',
   'Triaged',
   'Untriaged',
+  'untriaged',
+  'Triage-Approved',
   'Requires WPF team triage',
-  'Discuss In WPF Team Triage'
+  'Discuss In WPF Team Triage',
+  'triaged',
+  'triage-focus',
+  'donotuse_Triaged'
 ]
 
 class Model
@@ -47,27 +59,34 @@ class Model
   constructor() {
     this.owner = 'dotnet';
     this.repo = ko.observable('wpf');
+    this.repoList = ['wpf','winforms','runtime','roslyn','aspnetcore','fsharp'];
     this.loading = ko.observable(false);
     this.currentTab = ko.observable("Unknown labels");
-    this.labels = ko.observableArray();
-    this.costs = ko.observableArray();
-    this.statuses = ko.observableArray();
-    this.priorities = ko.observableArray();
-    this.areas = ko.observableArray();
-    this.tenets = ko.observableArray();
-    this.ranks = ko.observableArray();
-    this.servicing = ko.observableArray();
-    this.portTargets = ko.observableArray();
-    this.workCategories = ko.observableArray();
-    this.wierdCategories = ko.observableArray();
-    this.mergeStatuses = ko.observableArray();
-    this.issueTypes = ko.observableArray();
-    this.triageClassification = ko.observableArray();
-    this.community = ko.observableArray();
-    this.architecture = ko.observableArray();
-    this.os = ko.observableArray();
+
+    this.affected = ko.observableArray();
     this.apiStatus = ko.observableArray();
+    this.architecture = ko.observableArray();
+    this.areas = ko.observableArray();
+    this.community = ko.observableArray();
+    this.costs = ko.observableArray();
+    this.features = ko.observableArray();
+    this.issueTypes = ko.observableArray();
+    this.labels = ko.observableArray();
+    this.mergeStatuses = ko.observableArray();
+    this.os = ko.observableArray();
+    this.portTargets = ko.observableArray();
+    this.priorities = ko.observableArray();
+    this.ranks = ko.observableArray();
+    this.resolution = ko.observableArray();
+    this.servicing = ko.observableArray();
+    this.statuses = ko.observableArray();
+    this.severities = ko.observableArray();
     this.team = ko.observableArray();
+    this.tenets = ko.observableArray();
+    this.themes = ko.observableArray();
+    this.triageClassification = ko.observableArray();
+    this.wierdCategories = ko.observableArray();
+    this.workCategories = ko.observableArray();
 
     this.repo.subscribe(() => this.calculate());
   }
@@ -89,7 +108,7 @@ class Model
       })
       labels = labels.filter(_ => {
           console.log(_);
-        if (_.name.startsWith("Cost:")) {
+        if (_.name.startsWith("Cost:") || _.name.startsWith("cost:")) {
           this.costs.push(_);
           return false;
         }
@@ -109,7 +128,7 @@ class Model
           this.areas.push(_);
           return false;
         }
-        if (_.name.startsWith("tenet-")) {
+        if (_.name.startsWith("tenet-") || _.name.startsWith("Tenet-")) {
           this.tenets.push(_);
           return false;
         }
@@ -121,7 +140,7 @@ class Model
           this.ranks.push(_);
           return false;
         }
-        if (_.name.startsWith("Servicing-")) {
+        if (_.name.startsWith("Servicing-") || _.name.startsWith("servicing-")) {
           this.servicing.push(_);
           return false;
         }
@@ -143,7 +162,26 @@ class Model
         }
         if (_.name.startsWith("os-")) {
           this.os.push(_);
-          console.log(this.os());
+          return false;
+        }
+        if (_.name.startsWith("Theme:") || _.name.startsWith("Theme-")) {
+          this.themes.push(_);
+          return false;
+        }
+        if (_.name.startsWith("feature-")) {
+          this.features.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Resolution-") || _.name.startsWith(":heavy_check_mark: Resolution:")) {
+          this.resolution.push(_);
+          return false;
+        }
+        if (_.name.startsWith("severity-")) {
+          this.severities.push(_);
+          return false;
+        }
+        if (_.name.startsWith("affected-")) {
+          this.affected.push(_);
           return false;
         }
         if (workCategory.indexOf(_.name) !== -1) {
@@ -213,7 +251,7 @@ model.calculate();
     </div>
     <div class="col-md-6">
       <label for="inputRepoName" class="form-label">Repo name:</label>
-      <select class="form-select" aria-label="Repo for labels analysis" data-bind="options: ['wpf','winforms','runtime'], value: repo"></select>
+      <select class="form-select" aria-label="Repo for labels analysis" data-bind="options: repoList, value: repo"></select>
     </div>
 
     <div class="col-12">
@@ -258,6 +296,9 @@ model.calculate();
   <h2>Priorities</h2>
   <p>Following "Do not make prioritization decisions" rule this is forbidden.</p>
   <labels-table params="labels: priorities"></labels-table>
+  <h2>Severity</h2>
+  <p>Following "Do not make prioritization decisions" rule this is forbidden.</p>
+  <labels-table params="labels: severities"></labels-table>
   <h2>Statuses</h2>
   <labels-table params="labels: statuses"></labels-table>
   <h2>Servicing</h2>
@@ -269,6 +310,12 @@ model.calculate();
   <h2>Teams</h2>
   <p>Teams for large projects.</p>
   <labels-table params="labels: team"></labels-table>
+  <h2>Themes</h2>
+  <p>Large themes for work. Set by appopriate folks.</p>
+  <labels-table params="labels: themes"></labels-table>
+  <h2>Resolution</h2>
+  <p>Resolution for the issues most likely should be set not by triagers.</p>
+  <labels-table params="labels: resolution"></labels-table>
   <!-- /ko -->
   <!-- ko if: currentTab() == 'Allowed' -->
   <h2>Areas</h2>
@@ -286,6 +333,11 @@ model.calculate();
   <h2>API status</h2>
   <p>All API should follow standard acceptance process.</p>
   <labels-table params="labels: apiStatus"></labels-table>
+  <h2>Features</h2>
+  <p>Features classificaiton helps with routing to appropriate dev.</p>
+  <labels-table params="labels: features"></labels-table>
+  <h2>Affected</h2>
+  <labels-table params="labels: affected"></labels-table>
   <!-- /ko -->
   <!-- ko if: currentTab() == 'Obsoleted' -->
   <h2>Tenets</h2>
