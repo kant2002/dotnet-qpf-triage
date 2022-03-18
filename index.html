@@ -16,11 +16,22 @@ async function getLabels(octokit, owner, repo,) {
 
 const octokit = new Octokit({});
 
+const workCategory = [
+  'Bug',
+  'Epic',
+  'Feature Request',
+  'Theme',
+  'User Story',
+  'Work Item'
+]
+
 class Model
 {
   constructor() {
     this.owner = 'dotnet';
     this.repo = 'wpf';
+    this.loading = ko.observable(false);
+    this.currentTab = ko.observable("Unknown labels");
     this.labels = ko.observableArray();
     this.costs = ko.observableArray();
     this.statuses = ko.observableArray();
@@ -30,49 +41,67 @@ class Model
     this.ranks = ko.observableArray();
     this.servicing = ko.observableArray();
     this.portTargets = ko.observableArray();
+    this.workCategories = ko.observableArray();
+  }
+
+  setTab(tab) {
+    this.currentTab(tab);
   }
 
   async calculate() {
-    let labels = await getLabels(octokit, this.owner, this.repo);
-    labels = labels.map(_ => {
-      return { ..._, isBright: isBright(_.color) }
-    })
-    labels = labels.filter(_ => {
-      if (_.name.startsWith("Cost:")) {
-        this.costs.push(_);
-        return false;
-      }
-      if (_.name.startsWith("Priority:")) {
-        this.priorities.push(_);
-        return false;
-      }
-      if (_.name.startsWith("Status:")) {
-        this.statuses.push(_);
-        return false;
-      }
-      if (_.name.startsWith("area-")) {
-        this.areas.push(_);
-        return false;
-      }
-      if (_.name.startsWith("tenet-")) {
-        this.tenets.push(_);
-        return false;
-      }
-      if (_.name.startsWith("rank")) {
-        this.ranks.push(_);
-        return false;
-      }
-      if (_.name.startsWith("Servicing-")) {
-        this.servicing.push(_);
-        return false;
-      }
-      if (_.name.startsWith("Port to")) {
-        this.portTargets.push(_);
-        return false;
-      }
-      return true;
-    });
-    this.labels(labels);
+    if (this.loading()) {
+      return;
+    }
+
+    this.loading(true);
+    try {
+      let labels = await getLabels(octokit, this.owner, this.repo);
+      labels = labels.map(_ => {
+        return { ..._, isBright: isBright(_.color) }
+      })
+      labels = labels.filter(_ => {
+        if (_.name.startsWith("Cost:")) {
+          this.costs.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Priority:")) {
+          this.priorities.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Status:")) {
+          this.statuses.push(_);
+          return false;
+        }
+        if (_.name.startsWith("area-")) {
+          this.areas.push(_);
+          return false;
+        }
+        if (_.name.startsWith("tenet-")) {
+          this.tenets.push(_);
+          return false;
+        }
+        if (_.name.startsWith("rank")) {
+          this.ranks.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Servicing-")) {
+          this.servicing.push(_);
+          return false;
+        }
+        if (_.name.startsWith("Port to")) {
+          this.portTargets.push(_);
+          return false;
+        }
+        if (workCategory.indexOf(_.name) !== -1) {
+          this.workCategories.push(_);
+          return false;
+        }
+        return true;
+      });
+      this.labels(labels);
+    } finally {
+      this.loading(false);
+    }
   }
 }
 
@@ -103,6 +132,7 @@ function isBright(color) {
 
 const model = new Model();
 ko.applyBindings(model);
+model.calculate();
 </script>
 </head>
 <body class="container">
@@ -122,24 +152,58 @@ ko.applyBindings(model);
     </div>
   
   </form>
+  <!-- ko if: loading -->
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <!-- /ko -->
+  <!-- ko ifnot: loading -->
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-bind="click: function () { setTab('Unknown labels') }, css: { active: currentTab() == 'Unknown labels'}">Unknown labels</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bind="click: function () { setTab('Allowed') }, css: { active: currentTab() == 'Allowed'}">Allowed</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bind="click: function () { setTab('Prohibited') }, css: { active: currentTab() == 'Prohibited'}">Prohibited</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bind="click: function () { setTab('Obsoleted') }, css: { active: currentTab() == 'Obsoleted'}">Obsoleted</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bind="click: function () { setTab('On case basis') }, css: { active: currentTab() == 'On case basis'}">On case basis</a>
+    </li>
+  </ul>
+  <!-- ko if: currentTab() == 'Unknown labels' -->
   <h1>Uncategorized <span class="badge bg-secondary" data-bind="text: labels().length">Qty</span></h1>
   <labels-table params="labels: labels"></labels-table>
+  <!-- /ko -->
+  <!-- ko if: currentTab() == 'Prohibited' -->
   <h2>Costs</h2>
   <labels-table params="labels: costs"></labels-table>
   <h2>Priorities</h2>
   <labels-table params="labels: priorities"></labels-table>
   <h2>Statuses</h2>
   <labels-table params="labels: statuses"></labels-table>
-  <h2>Areas</h2>
-  <labels-table params="labels: areas"></labels-table>
-  <h2>Tenets</h2>
-  <labels-table params="labels: tenets"></labels-table>
-  <h2>Ranks</h2>
-  <labels-table params="labels: ranks"></labels-table>
   <h2>Servicing</h2>
   <labels-table params="labels: servicing"></labels-table>
   <h2>Port Targets</h2>
   <labels-table params="labels: portTargets"></labels-table>
-
+  <!-- /ko -->
+  <!-- ko if: currentTab() == 'Allowed' -->
+  <h2>Areas</h2>
+  <labels-table params="labels: areas"></labels-table>
+  <!-- /ko -->
+  <!-- ko if: currentTab() == 'Obsoleted' -->
+  <h2>Tenets</h2>
+  <labels-table params="labels: tenets"></labels-table>
+  <h2>Ranks</h2>
+  <labels-table params="labels: ranks"></labels-table>
+  <h2>Work Category</h2>
+  <p>This is Azure DevOps work categories</p>
+  <labels-table params="labels: workCategories"></labels-table>
+  <!-- /ko -->
+  <!-- /ko -->
 </body>
 </html>
